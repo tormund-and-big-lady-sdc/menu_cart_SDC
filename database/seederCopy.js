@@ -1,9 +1,7 @@
 // const headers = require("./api_header");
-const Mongoose = require("mongoose"),
-menu = require("./models.js"),
-fetch = require("node-fetch"),
-fs = require('fs')
-// ,es = require('event-stream')
+const Mongoose = require("mongoose");
+const menu = require("./models.js");
+const fetch = require("node-fetch");
 
 /*------------The followings are all helper functions for the main seeder function---------------------
 ------------Scroll down to the bottom to see the main seeder function ;D-----------------------------*/
@@ -76,6 +74,14 @@ function descriptionGenerator() {
   return storage[Math.floor(storage.length * Math.random())];
 }
 
+function booleanGenerator() {
+  return Math.random() >= 0.5;
+}
+
+function priceGenerator() {
+  return Math.floor(5 + Math.random() * 10);
+}
+
 function extrasGenerator() {
   const itemStorage = ["rice", "fries", "coke", "Avocado", "tuna"];
   let result = [];
@@ -92,77 +98,92 @@ function extrasGenerator() {
   return result;
 }
 
-function makeLargeArray() {
-  let largeArray = [];
-  for (let i=1; i < 10000001; i++) {
+const photoFetcher = async function(query, page) {
+  let response = await fetch(
+    `https://api.pexels.com/v1/search?query=${query}&per_page=80&page=${page}`,
+    {
+      headers: {
+        Authorization: process.env.AUTHORIZATION
+      }
+    }
+  );
+  let data = await response.json();
+  return data.photos.map(x => {
+    return {
+      photo_URL: x.src.medium
+    };
+  });
+};
 
-    let obj = {};
-    obj.restaurant_id = i;
-    obj.photo_URL = "https://loremflickr.com/320/240/food";
-    obj.item_name = itemNameGenerator();
-    obj.description = descriptionGenerator();
-    obj.price = Math.floor(Math.random()*10) + 5;
-    obj.popular = [true, false][Math.floor(Math.random()*2)];
-    obj.special_instruction = [true, false][Math.floor(Math.random()*2)];
-    obj.extras = extrasGenerator();
+const photoFetcherPixabay = async function(query, page, perPage) {
+  let response = await fetch(
+    `https://pixabay.com/api/?key=${
+      process.env.KEY
+    }&q=${query}&per_page=${perPage}&page=${page}`
+  );
+  let data = await response.json();
+  return data.hits.map(x => {
+    return {
+      photo_URL: x.webformatURL
+    };
+  });
+};
 
-    largeArray.push(obj);
-  }
-  return largeArray;
+const photoGenerator = async function() {
+  const korean = [
+    ...(await photoFetcherPixabay("korean food", 1, 160)),
+    ...(await photoFetcher("asian food", 1)),
+    ...(await photoFetcher("asian food", 2))
+  ];
+  const mexican = [
+    ...(await photoFetcher("mexican food", 1)),
+    ...(await photoFetcher("mexican food", 2)),
+    ...(await photoFetcherPixabay("mexican food", 1, 160)),
+    ...(await photoFetcherPixabay("taco", 1, 9))
+  ];
+  const chinese = [
+    ...(await photoFetcher("chinese food", 1)),
+    ...(await photoFetcher("chinese food", 2)),
+    ...(await photoFetcherPixabay("chinese food", 1, 160))
+  ];
+  const italian = [
+    ...(await photoFetcher("italian food", 1)),
+    ...(await photoFetcher("italian food", 2)),
+    ...(await photoFetcherPixabay("italian food", 1, 160))
+  ];
+  const burger = [
+    ...(await photoFetcher("american fast food", 1)),
+    ...(await photoFetcher("american fast food", 2)),
+    ...(await photoFetcherPixabay("american food", 1, 160))
+  ];
+
+  const combined = [...korean, ...mexican, ...chinese, ...italian, ...burger];
+  return combined;
+};
+
+//-----------------------------MAIN SEEDER FUNCTION-----------------------------------
+
+const seeder = function(){
+  photoGenerator()
+    .then(photo => {
+      return [...photo].map((item, i) => {
+        item.restaurant_id = Math.floor(i / 16) + 1;
+        item.item_name = itemNameGenerator();
+        item.description = descriptionGenerator();
+        item.price = priceGenerator();
+        item.popular = booleanGenerator() && booleanGenerator();
+        item.special_instruction = booleanGenerator();
+        item.extras = extrasGenerator();
+        return item;
+      });
+    })
+    .then(menuData => {
+      menu.collection.drop();
+      menu.insertMany(menuData).finally(() => {
+        Mongoose.connection.close();
+      });
+    })
+    .catch(e => console.log(e));  
 }
 
-const data = makeLargeArray();
-
-const file = require("fs").createWriteStream("./data.json");
-
-(async() => {
-  for(let i = 0; i < 10000000; i++) {
-    let tempObj = '';
-
-    //format to JSON array
-    // if (i === 0) {
-    //   tempObj = '[' + JSON.stringify(data[i]) + ',\n'
-    // } else if (i === 10000000) {
-    //   tempObj = JSON.stringify(data[i]) + ']'
-    // } else {
-    //   tempObj = JSON.stringify(data[i]) + ',\n'
-    // }
-
-    //format to JSON
-    if (i !== 9999999) {
-      tempObj = JSON.stringify(data[i], null, 2) + ',\n'
-    } else {
-      tempObj = JSON.stringify(data[i], null, 2) + '\n'
-    }
-
-    if(!file.write(tempObj)) {
-      // Will pause every 16384 iterations until `drain` is emitted
-      await new Promise(resolve => file.once('drain', resolve));
-    }
-  }
-})();
-
-const fileCSV = require("fs").createWriteStream("./data.csv");
-
-(async() => {
-  for(let i = 0; i < 10000000; i++) {
-    let tempObj = '';
-
-    //format to CSV
-    if (i === 0) {
-      tempObj = 'restaurant_id|photo_URL|item_name|description|price|popular|special_instruction|extras\n';
-      // console.log("1: ", data[i].restaurant_id)
-      let obj = JSON.stringify(data[i].extras);
-      tempObj += `${data[i].restaurant_id}|${data[i].photo_URL}|${data[i].item_name}|${data[i].description}|${data[i].price}|${data[i].popular}|${data[i].special_instruction}|${obj}\n`;
-    } else {
-      // console.log(data[i].restaurant_id)
-      let obj = JSON.stringify(data[i].extras);
-      tempObj += `${data[i].restaurant_id}|${data[i].photo_URL}|${data[i].item_name}|${data[i].description}|${data[i].price}|${data[i].popular}|${data[i].special_instruction}|${obj}\n`;
-    }
-
-    if(!fileCSV.write(tempObj)) {
-      // Will pause every 16384 iterations until `drain` is emitted
-      await new Promise(resolve => fileCSV.once('drain', resolve));
-    }
-  }
-})();
+seeder();

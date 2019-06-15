@@ -1,5 +1,5 @@
 var mongoose = require("mongoose");
-var db = require("./index");
+var db = require("./indexMongoose");
 
 var menuSchema = new mongoose.Schema({
   item_name: String,
@@ -20,6 +20,6 @@ var menuSchema = new mongoose.Schema({
   photo_URL: String
 });
 
-var menu = mongoose.model("menu", menuSchema);
+var menus = mongoose.model("menus", menuSchema);
 
-module.exports = menu;
+module.exports = menus;

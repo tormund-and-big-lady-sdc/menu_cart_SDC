@@ -1,24 +1,16 @@
 const express = require('express')
 const app = express()
 const port = process.env.PORT||3100
-// const routers = require('./routers.js')
 const path = require('path')
-const menus = require('../database/models.js')
+
 const cors = require('cors')
 var expressStaticGzip = require('express-static-gzip');
 const CronJob = require('cron').CronJob;
-// const tester = require('../database/seeder.js')
-
-
-//require middleware
-const morgan = require("morgan")
 
 //use middleware
 app.use(cors())
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
-app.use(morgan('dev'))
-
 
 //serve the client
 app.use('/restaurants/menu_cart', expressStaticGzip(path.join(__dirname, '../public'), {
@@ -26,20 +18,28 @@ app.use('/restaurants/menu_cart', expressStaticGzip(path.join(__dirname, '../pub
     orderPreference: ['br', 'gz']
  }))
 
-//set up router
-// app.use('/api', routers)
+//Raw Postgres
+const dbPostgres = require('../database/postgres/indexPostgres.js')
+app.get('/api/postgres/:id', (req, res) => {
+    let { id } = req.params;
+    dbPostgres.query(`SELECT * FROM testtable WHERE restaurant_id = ${id}`, (error, data) => {
+      if (error) {
+        res.send(404).send("PG error get ID!! ", error)
+      } else {
+        res.status(200).json(data.rows)
+      }
+    })
+  })
 
-app.get('/api/data/:id', (req, res) => {
-    const { id } = req.params
-    menus.find({restaurant_id: id})
-    .then((data)=>{res.status(200).send(data)})
-    .catch((err)=>{
-        console.log('error in get menus!!', err)
+app.get('/api/rand/postgres', (req, res) => {
+  let id = Math.ceil(Math.random()*1000000) + 9000000;
+    dbPostgres.query(`SELECT * FROM testtable WHERE restaurant_id = ${id}`, (error, data) => {
+      if (error) {
+        res.send(404).send("PG error get ID!! ", error)
+      } else {
+        res.status(200).json(data.rows)
+      }
     })
 })
 
-//cron task (this runs the seeder every midnight at 1am)
-// new CronJob('* * * * * *', tester, null, true, 'America/Los_Angeles');
-
-
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+app.listen(port, () => console.log(`App listening on port ${port}!`))
