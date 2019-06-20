@@ -57,3 +57,6 @@ module.exports = menus; //export module as Menu
 
 // COPY testtable
 // FROM '/Users/Victor/HRLA29/FEC-NS/menu-cart/database/data.csv' DELIMITER '|' CSV HEADER;
+
+// COPY testtable
+// FROM '/home/ubuntu/seeder/SDC_seeder/data.csv' DELIMITER '|' CSV HEADER;
