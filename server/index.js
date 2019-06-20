@@ -21,25 +21,26 @@ app.use('/restaurants/menu_cart', expressStaticGzip(path.join(__dirname, '../pub
 //Raw Postgres
 const dbPostgres = require('../database/postgres/indexPostgres.js');
 app.get('/api/postgres/:id', (req, res) => {
-    let { id } = req.params;
+    var { id } = req.params;
     dbPostgres.query(`SELECT * FROM testtable WHERE restaurant_id = ${id}`, (error, data) => {
-      if (error) {
-        res.status(404).send("PG error get ID!! ", error)
-      } else {
-        res.status(200).json(data.rows)
+      res.send(data.rows)
+      // if (error) {
+        // res.status(404).send("PG error get ID!! ", error)
+      // } else {
+        // res.status(200).json(data.rows)
       }
-    })
+    )
   });
 
-app.get('/api/rand/postgres', (req, res) => {
-  let id = Math.ceil(Math.random()*1000000) + 9000000;
-    dbPostgres.query(`SELECT * FROM testtable WHERE restaurant_id = ${id}`, (error, data) => {
-      if (error) {
-        res.status(404).send("PG error get ID!! ", error)
-      } else {
-        res.status(200).json(data.rows)
-      }
-  })
-});
+// app.get('/api/rand/postgres', (req, res) => {
+  // var id = Math.ceil(Math.random()*1000000) + 9000000;
+    // dbPostgres.query(`SELECT * FROM testtable WHERE restaurant_id = ${id}`, (error, data) => {
+      // if (error) {
+        // res.status(404).send("PG error get ID!! ", error)
+      // } else {
+        // res.status(200).json(data.rows)
+      // }
+  // })
+// });
 
 app.listen(port, () => console.log(`App listening on port ${port}!`));

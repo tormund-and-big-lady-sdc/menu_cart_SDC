@@ -5,16 +5,19 @@ const pool = new Pool({
   host: 'ec2-52-15-103-198.us-east-2.compute.amazonaws.com',
   database: 'postgres',
   password: pg,
-  min: 5,
   max: 50,
-  port: 5432
+  port: 5432,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 })
 
-if(pool !== null) {
-  console.log("***** connected to postgres *****")
-} else {
-  console.log("!!!!! error connecting to postgres !!!!!")
-}
+pool.query('SELECT NOW()', (err, res) => {
+  if (err) {
+    return console.log("Postgres connection error : ", err )
+  }
+  console.log("***** connected to postgres on 5432 *****")
+})
+
 
 module.exports = pool;
 
