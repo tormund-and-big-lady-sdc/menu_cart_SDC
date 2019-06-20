@@ -2,9 +2,11 @@ const Pool = require('pg').Pool
 const pg = require('../../config.js')
 const pool = new Pool({
   user: 'postgres',
-  host: 'ec2-13-58-184-178.us-east-2.compute.amazonaws.com',
+  host: 'ec2-52-15-103-198.us-east-2.compute.amazonaws.com',
   database: 'postgres',
   password: pg,
+  min: 5,
+  max: 50,
   port: 5432
 })
 
